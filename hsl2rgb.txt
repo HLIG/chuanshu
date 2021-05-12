@@ -1,0 +1,82 @@
+function [rout,g,b] = hsl2rgb(h,s,l)
+%HSL2RGB Convert hue-saturation-lightness colors to red-green-blue.
+%   M = HSL2RGB(H) converts an HSL color map to an RGB color map.
+%   Each map is a matrix with any number of rows, exactly three columns,
+%   and elements in the interval 0 to 1.  The columns of the input matrix,
+%   H, represent hue, saturation and value, respectively.  The columns of
+%   the resulting output matrix, M, represent intensity of red, blue and
+%   green, respectively.
+%
+%   RGB = HSL2RGB(HSL) converts the HSL image HSL (3-D array) to the
+%   equivalent RGB image RGB (3-D array).
+%
+%   As the hue varies from 0 to 1, the resulting color varies from
+%   red, through yellow, green, cyan, blue and magenta, back to red.
+%   When the saturation is 0, the colors are unsaturated; they are
+%   simply shades of gray.  When the saturation is 1, the colors are
+%   fully saturated; they can still contain a white component.  As the
+%   lightness varies from 0 to 1, the brightness increases from black,
+%   through colour (if saturation is non-zero, otherwise through grey),
+%   to white.
+%
+%   See also RGB2HSL, HSV2RGB, RGB2HSV 
+
+%   Undocumented syntaxes:
+%   [R,G,B] = HSL2RGB(H,S,L) converts the HSL image H,S,L to the
+%   equivalent RGB image R,G,B.
+%
+%   RGB = HSL2RGB(H,S,L) converts the HSL image H,S,L to the 
+%   equivalent RGB image stored in the 3-D array (RGB).
+%
+%   [R,G,B] = HSL2RGB(HSL) converts the HSL image HSL (3-D array) to
+%   the equivalent RGB image R,G,B.
+%
+
+if ( (nargin ~= 1) && (nargin ~= 3) ),
+  error('jcb:hsl2rgb:WrongInputNum', 'Wrong number of input arguments.');
+end
+
+threeD = (ndims(h)==3); % Determine if input includes a 3-D array
+
+if threeD,
+  s = h(:,:,2); l = h(:,:,3); h = h(:,:,1);
+  siz = size(h);
+  s = s(:); l = l(:); h = h(:);
+elseif nargin==1, % HSL colormap
+  s = h(:,2); l = h(:,3); h = h(:,1);
+  siz = size(h);
+else
+  if ~isequal(size(h),size(s),size(l)),
+    error('jcb:hsl2rgb:InputSizeMismatch', 'H,S,L must all be the same size.');
+  end
+  siz = size(h);
+  h = h(:); s = s(:); l = l(:);
+end
+
+h = 6*h(:);
+k = fix(h-6*eps);
+C=(1-abs(2*l-1)).*s;
+X = C.*(1 - abs(mod(h,2)-1));
+m=l-C/2;
+m(m<0)=0; % added as we occasionally get very small -ve m...
+r = (k==0).*C + (k==1).*X + (k==2).*0 + (k==3).*0 + (k==4).*X + (k==5).*C + m;
+g = (k==0).*X + (k==1).*C + (k==2).*C + (k==3).*X + (k==4).*0 + (k==5).*0 + m;
+b = (k==0).*0 + (k==1).*0 + (k==2).*X + (k==3).*C + (k==4).*C + (k==5).*X + m;
+
+
+if nargout<=1,
+  if (threeD),
+    rout = zeros([siz,3]);
+    rout(:,:,1) = reshape(r,siz);
+    rout(:,:,2) = reshape(g,siz);
+    rout(:,:,3) = reshape(b,siz);
+  else
+    rout = [r g b];
+  end
+else
+  rout = reshape(r,siz);
+  g = reshape(g,siz);
+  b = reshape(b,siz);
+end
+
+end
